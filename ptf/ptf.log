@@ -1,0 +1,36 @@
+22:46:51.108  root      : INFO    : ++++++++ Thu May 28 22:46:51 2020 ++++++++
+22:46:51.163  scapy.runtime: WARNING : No route found for IPv6 destination :: (no default route?)
+22:46:51.208  root      : INFO    : VXLAN support found in Scapy
+22:46:51.209  root      : INFO    : ERSPAN support found in Scapy
+22:46:51.209  root      : INFO    : GENEVE support found in Scapy
+22:46:51.210  root      : INFO    : MPLS support found in Scapy
+22:46:51.210  root      : INFO    : NVGRE support found in Scapy
+22:46:51.211  root      : INFO    : IGMP support found in Scapy
+22:46:51.229  root      : DEBUG   : Parsed test parameters:
+22:46:51.229  root      : DEBUG   : 	*use_pi=False
+22:46:51.229  root      : DEBUG   : 	*config_file=filename
+22:46:51.229  root      : DEBUG   : 	*target=asic-model
+22:46:51.229  root      : DEBUG   : 	*thrift_server=localhost
+22:46:51.229  root      : DEBUG   : 	*port_mode=100g
+22:46:51.229  root      : DEBUG   : 	*setup=False
+22:46:51.229  root      : DEBUG   : 	*traffic_gen=None
+22:46:51.229  root      : DEBUG   : 	*p4c=
+22:46:51.229  root      : DEBUG   : 	*num_pipes=4
+22:46:51.229  root      : DEBUG   : 	*reboot=none
+22:46:51.229  root      : DEBUG   : 	*cleanup=False
+22:46:51.229  root      : DEBUG   : 	*counter_byte_adjust=0
+22:46:51.229  root      : DEBUG   : 	*grpc_server=localhost
+22:46:51.230  root      : DEBUG   : 	*test_seed=None
+22:46:51.230  root      : DEBUG   : 	*drivers_test_info=None
+22:46:51.230  root      : DEBUG   : 	*arch=tofino
+22:46:51.230  root      : DEBUG   : If something is missing, make sure you used the correct syntax: --test-params="[k=v;]*k=v"
+22:46:51.309  root      : INFO    : Importing platform: eth
+22:46:51.310  root      : DEBUG   : Configuration: {'xunit_dir': 'xunit', 'disable_ipv6': False, 'minsize': 0, 'list_test_names': False, 'test_file': None, 'test_spec': '', 'allow_user': False, 'test_order_seed': 2746, 'default_negative_timeout': 0.1, 'platform': 'eth', 'log_dir': None, 'xunit': False, 'disable_erspan': False, 'device_sockets': [], 'disable_geneve': False, 'socket_recv_size': 10240, 'profile': False, 'default_timeout': 2.0, 'platform_args': None, 'relax': False, 'random_seed': None, 'interfaces': [(0, 0, 'veth1'), (0, 1, 'veth3'), (0, 2, 'veth5'), (0, 3, 'veth7'), (0, 4, 'veth9'), (0, 5, 'veth11'), (0, 6, 'veth13'), (0, 7, 'veth15'), (0, 8, 'veth17'), (0, 9, 'veth19'), (0, 10, 'veth21'), (0, 11, 'veth23'), (0, 12, 'veth25'), (0, 13, 'veth27'), (0, 14, 'veth29'), (0, 15, 'veth31'), (0, 16, 'veth33'), (0, 64, 'veth251')], 'test_case_timeout': None, 'port_map': {(0, 1): 'veth3', (0, 0): 'veth1', (0, 15): 'veth31', (0, 14): 'veth29', (0, 13): 'veth27', (0, 64): 'veth251', (0, 7): 'veth15', (0, 12): 'veth25', (0, 6): 'veth13', (0, 11): 'veth23', (0, 16): 'veth33', (0, 5): 'veth11', (0, 10): 'veth21', (0, 4): 'veth9', (0, 9): 'veth19', (0, 3): 'veth7', (0, 8): 'veth17', (0, 2): 'veth5'}, 'disable_vxlan': False, 'disable_nvgre': False, 'qlen': 100, 'test_order': 'default', 'profile_file': 'profile.out', 'fail_skipped': False, 'test_params': "arch='tofino';target='asic-model';use_pi='False';traffic_gen='None';config_file='filename';drivers_test_info='None';test_seed='None';num_pipes='4';port_mode='100g';counter_byte_adjust='0';setup=False;cleanup=False;p4c='';thrift_server='localhost';grpc_server='localhost';reboot='none';", 'test_dir': '.', 'list': False, 'platform_dir': '/data/bf-sde-9.2.0/install/lib/python2.7/site-packages/ptf/platforms', 'disable_igmp': False, 'disable_mpls': False, 'debug': 'verbose', 'log_file': 'ptf.log', 'failfast': False}
+22:46:51.310  root      : INFO    : port map: {(0, 1): 'veth3', (0, 0): 'veth1', (0, 15): 'veth31', (0, 14): 'veth29', (0, 13): 'veth27', (0, 64): 'veth251', (0, 7): 'veth15', (0, 12): 'veth25', (0, 6): 'veth13', (0, 11): 'veth23', (0, 16): 'veth33', (0, 5): 'veth11', (0, 10): 'veth21', (0, 4): 'veth9', (0, 9): 'veth19', (0, 3): 'veth7', (0, 8): 'veth17', (0, 2): 'veth5'}
+22:46:51.310  root      : INFO    : Autogen random seed: 9625175
+22:46:51.314  root      : INFO    : *** TEST RUN START: Thu May 28 22:46:51 2020
+22:46:51.315  root      : INFO    : ** START TEST CASE ptftest.Test
+22:46:51.441  root      : INFO    : *** TEST RUN END  : Thu May 28 22:46:51 2020
+22:46:51.441  root      : INFO    : *** TEST RUN END  : Thu May 28 22:46:51 2020
+22:46:51.441  dataplane : INFO    : Thread exit
+22:46:51.441  dataplane : INFO    : Thread exit
