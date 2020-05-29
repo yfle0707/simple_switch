@@ -29,11 +29,11 @@ if hostname == 'tofino2':
     l2_forward.add_with_forward(dst_addr=0x6cb31153099c, port=130)
     l2_forward.add_with_forward(dst_addr=0x0108c2000001, port=130)
 elif hostname == 'wisc-tofino-0':
-    dmac = bfrt.yle_simple_switch.pipe.SwitchIngress.dmac
+    dmac = bfrt.yle_switch.pipe.SwitchIngress.dmac
     dmac.add_with_dmac_forward(dst_addr=0xb8599fc4a10f, port=136)
     dmac.add_with_dmac_forward(dst_addr=0xb8599fc4a0ff, port=128)
     dmac.add_with_dmac_forward(dst_addr=0xb8599fc4a0f7, port=144)
-    rocev2 = bfrt.yle_simple_switch.pipe.SwitchIngress.rocev2
+    rocev2 = bfrt.yle_switch.pipe.SwitchIngress.rocev2
     rocev2.add_with_rocev2_hit(src_addr=0xb8599fc4a10f, port=136)
     rocev2.add_with_rocev2_hit(src_addr=0xb8599fc4a0ff, port=128)
     rocev2.add_with_rocev2_hit(src_addr=0xb8599fc4a0f7, port=144)

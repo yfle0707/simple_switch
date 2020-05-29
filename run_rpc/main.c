@@ -17,7 +17,9 @@
 #include <traffic_mgr/traffic_mgr_q_intf.h>
 #include <traffic_mgr/traffic_mgr_sch_intf.h>
 #include <tofino/bf_pal/bf_pal_port_intf.h>
-
+#include <tofino/pdfixed/pd_common.h>
+#include <tofino/pdfixed/pd_tm.h>
+#include <tofino/pdfixed/pd_mirror.h>
 /* 
  * Convenient defines that reflect SDE conventions
  */
@@ -32,7 +34,7 @@
 #define STATUS_SERVER_TCP_PORT 7777
 
 
-#define P4_PROG_NAME "yle_simple_switch"
+#define P4_PROG_NAME "yle_switch"
 #define TX_CAPTURE_DEV_PORT 128
 
 // Global variable(s)
@@ -87,25 +89,9 @@ void status_check(bf_status_t status,  const char * funcname){
         }
 }
 
-p4_pd_status_t control_plane_app(){
-
+void pfc_setup(const uint8_t dev_id){
+   
 	bf_status_t      status;
-	p4_pd_sess_hdl_t    sess_hdl;
-	const uint8_t dev_id = 0;
-
-	printf("\n#######   Running the CP application   #######\n\n");
-
-	status = p4_pd_client_init(&sess_hdl);
-
-    status_check(status, "p4_pd_client_init");
-	// Initialize ports and tables using bfshell commands
-	system("bfshell -f ./portadd.py"); // this is a shortcut ;)
-	system("bfshell -b ./setup.py"); // this is a shortcut ;)
-    printf("\n\nDONE adding bfrt_python commands!\n\n\n");
-
-    sleep(5); // just wait for the ports to come up. Can do better using port OPR checks.
-
-    
     bf_dev_port_t ports[8] = {128, 136, 144};  //1/0,2/0,3/0 
     for(int i=0; i<3; i++){
         bf_dev_port_t ingress_port = ports[i];
@@ -161,6 +147,55 @@ p4_pd_status_t control_plane_app(){
         status_check(status,"egress bf_pal_port_flow_control_pfc_set");
 
     }
+    return ;
+
+}
+
+void add_mirror(const uint8_t dev_id, p4_pd_sess_hdl_t  sess_hdl){
+        p4_pd_status_t status;
+        //p4_pd_tm_dev_t dev,
+        //p4_pd_tm_pipe_t pipe,
+        //p4_pd_tm_port_t port,
+        //p4_pd_tm_queue_t queue
+
+        status = p4_pd_tm_set_negative_mirror_dest(dev_id, 1, 156, 0);
+        status_check(status,"p4_pd_tm_set_negative_mirror_dest");
+        p4_pd_mirror_session_info_t mirror_sess;
+        mirror_sess.type = PD_MIRROR_TYPE_NORM;
+        mirror_sess.dir = PD_DIR_EGRESS;
+        mirror_sess.id = 15;
+        mirror_sess.egr_port = 156; 
+        mirror_sess.egr_port_v = true;
+        mirror_sess.max_pkt_len = 64;
+       
+        p4_pd_dev_target_t target_dev;
+        target_dev.device_id = dev_id;
+        target_dev.dev_pipe_id = 1;
+        status = p4_pd_mirror_session_create(sess_hdl, target_dev, &mirror_sess);
+        status_check(status,"p4_pd_mirror_session_create");
+        return;
+
+}
+p4_pd_status_t control_plane_app(){
+
+	bf_status_t      status;
+	p4_pd_sess_hdl_t    sess_hdl;
+	const uint8_t dev_id = 0;
+
+	printf("\n#######   Running the CP application   #######\n\n");
+
+	status = p4_pd_client_init(&sess_hdl);
+
+    status_check(status, "p4_pd_client_init");
+	// Initialize ports and tables using bfshell commands
+	system("bfshell -f ./portadd.py"); // this is a shortcut ;)
+	system("bfshell -b ./setup.py"); // this is a shortcut ;)
+    printf("\n\nDONE adding bfrt_python commands!\n\n\n");
+
+    sleep(5); // just wait for the ports to come up. Can do better using port OPR checks.
+    
+    //pfc_setup(dev_id);
+    add_mirror(dev_id, sess_hdl); 
 
     while(true){
             printf("Starting...\n");
