@@ -17,8 +17,8 @@ for fp_port in fp_ports:
         dp = bfrt.port.port_hdl_info.get(conn_id=fp_port, chnl_id=lane, print_ents=False).data[b'$DEV_PORT']
         if hostname =="tofino2":
             bfrt.port.port.add(dev_port=dp, speed='BF_SPEED_10G', fec='BF_FEC_TYP_NONE', auto_negotiation=2, port_enable=True)
- #       elif hostname == "wisc-tofino-0":
- #           bfrt.port.port.add(dev_port=dp, speed='BF_SPEED_100G', fec='BF_FEC_TYP_REED_SOLOMON', auto_negotiation=2, port_enable=True)
+        #elif hostname == "wisc-tofino-0":
+        #    bfrt.port.port.add(dev_port=dp, speed='BF_SPEED_100G', fec='BF_FEC_TYP_REED_SOLOMON', auto_negotiation=2, port_enable=True)
 
 
 # Add entries to the l2_forward table
@@ -29,14 +29,74 @@ if hostname == 'tofino2':
     l2_forward.add_with_forward(dst_addr=0x6cb31153099c, port=130)
     l2_forward.add_with_forward(dst_addr=0x0108c2000001, port=130)
 elif hostname == 'wisc-tofino-0':
-    dmac = bfrt.yle_switch.pipe.SwitchIngress.dmac
-    dmac.add_with_dmac_forward(dst_addr=0xb8599fc4a10f, port=136)
-    dmac.add_with_dmac_forward(dst_addr=0xb8599fc4a0ff, port=128)
-    dmac.add_with_dmac_forward(dst_addr=0xb8599fc4a0f7, port=144)
-    rocev2 = bfrt.yle_switch.pipe.SwitchIngress.rocev2
-    rocev2.add_with_rocev2_hit(src_addr=0xb8599fc4a10f, port=136)
-    rocev2.add_with_rocev2_hit(src_addr=0xb8599fc4a0ff, port=128)
-    rocev2.add_with_rocev2_hit(src_addr=0xb8599fc4a0f7, port=144)
+##    dmac = bfrt.ampel_switch.pipe.SwitchIngress.dmac
+##    dmac.add_with_dmac_forward(dst_addr=0xb8599fc4a0ff, port=128)
+##    dmac.add_with_dmac_forward(dst_addr=0xb8599fc4a10f, port=136)
+##    dmac.add_with_dmac_forward(dst_addr=0xb8599fc4a0f7, port=144)
+##    dmac.add_with_dmac_forward(dst_addr=0x1c34da41c945, port=140)
+##    dmac.add_with_dmac_forward(dst_addr=0x1c34da41d26d, port=132)
+
+    ingress_feedback_table = bfrt.ampel_switch.pipe.SwitchIngress.queueinfo.ingress_feedback_table
+    ingress_feedback_table.add_with_gen_pause_action(queue_depth_flag=1)
+    ingress_feedback_table.add_with_nop(queue_depth_flag=0)
+    ingress_feedback_table.add_with_cut_payload_action(queue_depth_flag=2)
+
+    #for dumbbell topo
+    dmac = bfrt.ampel_switch.pipe.SwitchIngress.dmac_dbtopo
+    dmac.add_with_dmac_forward(ingress_port=128, dst_addr=0xb8599fc4a10f, port=136)
+    dmac.add_with_dmac_forward(ingress_port=128, dst_addr=0xb8599fc4a0f7, port=160)
+    dmac.add_with_dmac_forward(ingress_port=128, dst_addr=0x1c34da41c945, port=160)
+    dmac.add_with_dmac_forward(ingress_port=128, dst_addr=0x1c34da41d26d, port=160)
+    dmac.add_with_dmac_forward(ingress_port=128, dst_addr=0x98039b9b55ab, port=160)
+
+
+    dmac.add_with_dmac_forward(ingress_port=136, dst_addr=0xb8599fc4a0ff, port=128)
+    dmac.add_with_dmac_forward(ingress_port=136, dst_addr=0xb8599fc4a0f7, port=160)
+    dmac.add_with_dmac_forward(ingress_port=136, dst_addr=0x1c34da41c945, port=160)
+    dmac.add_with_dmac_forward(ingress_port=136, dst_addr=0x1c34da41d26d, port=160)
+    dmac.add_with_dmac_forward(ingress_port=136, dst_addr=0x98039b9b55ab, port=160)
+
+    dmac.add_with_dmac_forward(ingress_port=144, dst_addr=0xb8599fc4a0ff, port=168)
+    dmac.add_with_dmac_forward(ingress_port=144, dst_addr=0xb8599fc4a10f, port=168)
+    dmac.add_with_dmac_forward(ingress_port=144, dst_addr=0x1c34da41c945, port=140)
+    dmac.add_with_dmac_forward(ingress_port=144, dst_addr=0x1c34da41d26d, port=132)
+    dmac.add_with_dmac_forward(ingress_port=144, dst_addr=0x98039b9b55ab, port=188)
+
+    dmac.add_with_dmac_forward(ingress_port=140, dst_addr=0xb8599fc4a0ff, port=168)
+    dmac.add_with_dmac_forward(ingress_port=140, dst_addr=0xb8599fc4a10f, port=168)
+    dmac.add_with_dmac_forward(ingress_port=140, dst_addr=0x1c34da41d26d, port=132)
+    dmac.add_with_dmac_forward(ingress_port=140, dst_addr=0xb8599fc4a0f7, port=144)
+    dmac.add_with_dmac_forward(ingress_port=140, dst_addr=0x98039b9b55ab, port=188)
+
+    dmac.add_with_dmac_forward(ingress_port=132, dst_addr=0xb8599fc4a0ff, port=168)
+    dmac.add_with_dmac_forward(ingress_port=132, dst_addr=0xb8599fc4a10f, port=168)
+    dmac.add_with_dmac_forward(ingress_port=132, dst_addr=0x1c34da41c945, port=140)
+    dmac.add_with_dmac_forward(ingress_port=132, dst_addr=0xb8599fc4a0f7, port=144)
+    dmac.add_with_dmac_forward(ingress_port=132, dst_addr=0x98039b9b55ab, port=188)
+
+    dmac.add_with_dmac_forward(ingress_port=188, dst_addr=0xb8599fc4a0ff, port=168)
+    dmac.add_with_dmac_forward(ingress_port=188, dst_addr=0xb8599fc4a10f, port=168)
+    dmac.add_with_dmac_forward(ingress_port=188, dst_addr=0x1c34da41c945, port=140)
+    dmac.add_with_dmac_forward(ingress_port=188, dst_addr=0xb8599fc4a0f7, port=144)
+    dmac.add_with_dmac_forward(ingress_port=188, dst_addr=0x1c34da41d26d, port=132)
+
+
+    dmac.add_with_dmac_forward(ingress_port=160, dst_addr=0xb8599fc4a0ff, port=128)
+    dmac.add_with_dmac_forward(ingress_port=160, dst_addr=0xb8599fc4a10f, port=136)
+
+    dmac.add_with_dmac_forward(ingress_port=168, dst_addr=0x1c34da41c945, port=140)
+    dmac.add_with_dmac_forward(ingress_port=168, dst_addr=0xb8599fc4a0f7, port=144)
+    dmac.add_with_dmac_forward(ingress_port=168, dst_addr=0x1c34da41d26d, port=132)
+    dmac.add_with_dmac_forward(ingress_port=168, dst_addr=0x98039b9b55ab, port=188)
+
+
+
+    #dmac.add_with_dmac_forward(dst_addr=0x98039b9b55fa, port=36)
+    #dmac.add_with_dmac_forward(dst_addr=0x98039b9b55ab, port=48)
+    #rocev2 = bfrt.yle_switch.pipe.SwitchIngress.rocev2
+    #rocev2.add_with_rocev2_hit(src_addr=0xb8599fc4a10f, port=136)
+    #rocev2.add_with_rocev2_hit(src_addr=0xb8599fc4a0ff, port=128)
+    #rocev2.add_with_rocev2_hit(src_addr=0xb8599fc4a0f7, port=144)
 
 if hostname == 'tofino2':
 # Setup ARP broadcast for the active dev ports

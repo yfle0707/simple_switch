@@ -19,6 +19,8 @@
  *
  *
  ******************************************************************************/
+#define CP_MIRROR_PORT 176
+#define SEED_PACKETS_RECIRCULATION_PORT 152
 
 parser TofinoIngressParser(
         packet_in pkt,
@@ -67,18 +69,19 @@ parser SwitchIngressParser(
         tofino_parser.apply(pkt, ig_intr_md);
         transition parse_ethernet;
     }
-    /*
-    state parse_ethernet {
-        pkt.extract(hdr2.ethernet);
-        transition accept;
-    }*/
     state parse_ethernet {
         pkt.extract(hdr2.ethernet);
         transition select(hdr2.ethernet.ether_type,ig_intr_md.ingress_port) {
-            (ETHERTYPE_IPV4, 152) : parse_ipv4_for_pause;
+            (0xABCD, SEED_PACKETS_RECIRCULATION_PORT) : parse_queuedepth;      // parse_ipv4_for_pause;
+            (0xABCD, _): parse_queuedepth;
             (ETHERTYPE_IPV4, _) : parse_ipv4;
             default : accept;
         }
+    }
+    
+    state parse_queuedepth {
+        pkt.extract(hdr2.queuedepth);
+        transition accept;
     }
 
     state parse_ipv4_for_pause {
@@ -113,18 +116,6 @@ parser SwitchIngressParser(
         pkt.extract(hdr2.left);
         transition accept;
     } 
-
-
-/*    
-    state parse_ethernet {
-        pkt.extract(hdr2.ethernet);
-        transition select(hdr2.ethernet.ether_type) {
-            ETHERTYPE_IPV4 : parse_ipv4;
-            ETHERTYPE_PFC : parse_pfc;
-            default : accept;
-        }
-    }
-*/
 
     state parse_pfc {
         pkt.extract(hdr2.pfc);
@@ -218,49 +209,12 @@ parser SwitchIngressParser(
         transition parse_rocev2_crc;
     }
 
-/*
-    state parse_rocev2_payload {
-        pkt.extract(hdr2.rocev2_payload);
-        transition parse_rocev2_crc;
-    }
-*/
     state parse_rocev2_crc {
         pkt.extract(hdr2.rocev2_crc);
         transition accept;
     }
-//old used-version parser
-/*
-    state parse_rocev2_reth {
-        pkt.extract(hdr2.rocev2_reth);
-        transition parse_rocev2_payload;
-    }
 
-    state parse_rocev2_aeth {
-        pkt.extract(hdr2.rocev2_aeth);
-        transition parse_rocev2_crc;
-    }
 
-    state parse_tcp_payload {
-        pkt.extract(hdr2.tcp_payload_0);
-        pkt.extract(hdr2.tcp_payload_1);
-        pkt.extract(hdr2.tcp_payload_2);
-        pkt.extract(hdr2.tcp_payload_3);
-        pkt.extract(hdr2.tcp_payload_4);
-        pkt.extract(hdr2.tcp_payload_5);
-        pkt.extract(hdr2.tcp_payload_6);
-        transition accept;
-    }
-
-    state parse_rocev2_payload {
-        pkt.extract(hdr2.rocev2_payload);
-        transition parse_rocev2_crc;
-    }
-
-    state parse_rocev2_crc {
-        pkt.extract(hdr2.rocev2_crc);
-        transition accept;
-    }
-*/
 }
 
 // ---------------------------------------------------------------------------
@@ -272,8 +226,18 @@ control SwitchIngressDeparser(
         in switch_ingress_metadata_t ig_md2,
         in ingress_intrinsic_metadata_for_deparser_t ig_dprsr_md) {
     Checksum() ipv4_checksum;
-
+    Mirror() mirror;
     apply {
+//    if (ig_dprsr_md.mirror_type == 0) { 
+//        mirror.emit<mirror_header_type_0_h>(ig_md2.sess_id, {});  
+//    }
+        if (ig_dprsr_md.mirror_type == SWITCH_MIRROR_TYPE_PORT) { 
+            mirror.emit<switch_port_mirror_metadata_h>(
+                    ig_md2.sess_id,
+                    {ig_md2.mirror_type,
+                    ig_md2.sess_id});
+        }
+
     hdr2.ipv4.hdr_checksum = ipv4_checksum.update(
                 {hdr2.ipv4.version,
                  hdr2.ipv4.ihl,
@@ -289,6 +253,7 @@ control SwitchIngressDeparser(
         // TODO: update udp checksum
         pkt.emit(hdr2.ethernet); 
         pkt.emit(hdr2.pfc);
+        pkt.emit(hdr2.queuedepth);
         //pkt.emit(hdr2.crc);
         pkt.emit(hdr2.ipv4);
         pkt.emit(hdr2.tcp);
@@ -330,38 +295,52 @@ parser SwitchEgressParser(
 
     state start {
         tofino_parser.apply(pkt, eg_intr_md);
-        transition parse_ethernet;
+        switch_port_mirror_metadata_h port_md = pkt.lookahead<switch_port_mirror_metadata_h>();
+            transition select(port_md.type) {
+                SWITCH_MIRROR_TYPE_SQ_PAUSE: parse_mirror_metadata;
+                SWITCH_MIRROR_TYPE_CUT_PAYLOAD: parse_mirror_metadata;
+                default:    parse_ethernet;
+            }
     }
-/* parser until ipv4
+
+    state parse_mirror_metadata {
+        switch_port_mirror_metadata_h port_md;
+        pkt.extract(port_md);
+        eg_md.mirror_type = port_md.type;
+        eg_md.sess_id = port_md.session_id;
+        transition parse_sq_pause_ethernet;
+    }
+    state parse_sq_pause_ethernet{
+        pkt.extract(hdr2.ethernet);
+        transition parse_ipv4_for_pause;
+
+    }
     state parse_ethernet {
         pkt.extract(hdr2.ethernet);
         transition select(hdr2.ethernet.ether_type) {
-            ETHERTYPE_IPV4 : parse_ipv4;
+            ETHERTYPE_IPV4 : diff_parse_ipv4;
+            0xABCD      : parse_queuedepth;
             default : accept;
         }
     }
-    
-    state parse_ipv4 {
-        pkt.extract(hdr2.ipv4);
-        transition accept;
-    }
-*/
 
-
-/*  parser until ethernet
-    state parse_ethernet {
-        pkt.extract(hdr2.ethernet);
-        transition accept;
-    }*/
-
-    
-    state parse_ethernet {
-        pkt.extract(hdr2.ethernet);
-        transition select(hdr2.ethernet.ether_type) {
-            ETHERTYPE_IPV4 : parse_ipv4;
-  //          ETHERTYPE_PFC : parse_pfc;
-            default : accept;
+    state diff_parse_ipv4{
+        transition select(hdr2.ethernet.src_addr[7:0], eg_intr_md.egress_port) {
+            (_, SEED_PACKETS_RECIRCULATION_PORT):parse_queuedepth;
+//            (0xff, 128): parse_ipv4_for_pause;
+//            (0xf,  136): parse_ipv4_for_pause;
+//            (0xf7, 144): parse_ipv4_for_pause;
+//            (0x45, 140): parse_ipv4_for_pause;
+//            (0x6d, 132): parse_ipv4_for_pause;
+//            (0xff, 168): parse_ipv4_for_pause;
+//            (0xf,  168): parse_ipv4_for_pause;
+            default: parse_ipv4;
         }
+    }
+
+    state parse_queuedepth {
+        pkt.extract(hdr2.queuedepth);
+        transition accept;
     }
 
     state parse_ipv4 {
@@ -400,6 +379,59 @@ parser SwitchEgressParser(
         pkt.extract(hdr2.rocev2_crc);
         transition accept;
     }
+
+
+    state parse_ipv4_for_pause {
+        pkt.extract(hdr2.ipv4);
+        transition select(hdr2.ipv4.protocol) {
+            IP_PROTOCOLS_UDP : parse_udp_for_pause;
+            default : accept;
+        }
+    }
+
+    state parse_udp_for_pause {
+        pkt.extract(hdr2.udp);
+        transition select(hdr2.udp.dst_port) {
+            UDP_PORT_ROCEV2 : parse_rocev2_bth_for_pause;
+            default : accept;
+        }
+    }
+
+    state parse_rocev2_bth_for_pause {
+        pkt.extract(hdr2.rocev2_bth);
+	    //yle
+        transition select(eg_md.mirror_type){
+            SWITCH_MIRROR_TYPE_SQ_PAUSE: parse_for_construct_pfc;
+            SWITCH_MIRROR_TYPE_CUT_PAYLOAD: parse_for_construct_cp;
+            default:    accept;
+
+        }
+    }
+    state parse_for_construct_cp{
+        pkt.extract(hdr2.left_cp);
+        transition parse_rocev2_crc_cp_pkt;
+    }
+
+    state parse_rocev2_crc_cp_pkt {
+        pkt.extract(hdr2.rocev2_crc);
+        transition accept;
+    }
+
+    state parse_for_construct_pfc{
+        transition select(hdr2.rocev2_bth.opcode) {
+            ROCEV2_WRITE_REQUEST_ONLY: parse_left; //
+            ROCEV2_WRITE_REQUEST_FIRST: parse_left; //
+            ROCEV2_WRITE_REQUEST_MIDDLE: parse_left;//
+            ROCEV2_WRITE_REQUEST_LAST: parse_left;//
+            default : accept;
+        }
+
+    }
+    state parse_left {
+        pkt.extract(hdr2.left);
+        transition accept;
+    } 
+
 }
 
 // ---------------------------------------------------------------------------
@@ -410,7 +442,7 @@ control SwitchEgressDeparser(
         inout switch_header_t hdr2,
         in switch_egress_metadata_t eg_md,
         in egress_intrinsic_metadata_for_deparser_t eg_dprsr_md) {
-Mirror() mirror;
+//Mirror() mirror;
 Checksum() ipv4_checksum;
     apply{
         //MirrorId_t sess_id;
@@ -428,30 +460,21 @@ Checksum() ipv4_checksum;
                  hdr2.ipv4.protocol,
                  hdr2.ipv4.src_addr,
                  hdr2.ipv4.dst_addr});
-        /*
-        if(eg_dprsr_md.mirror_type == 0){
-            mirror.emit<mirror_h>(sess_id, {eg_md.pkt_type});
-        }*/
+/*
         if(eg_dprsr_md.mirror_type == 0){
             mirror.emit<mirror_header_type_0_h>(eg_md.sess_id, {});
         }
-/*
-        pkt.emit(hdr2.ethernet);
-        pkt.emit(hdr2.ipv4);
-        pkt.emit(hdr2.udp);
-        pkt.emit(hdr2.rocev2_bth);
-        pkt.emit(hdr2.rocev2_aeth);
-        pkt.emit(hdr2.rocev2_crc);
 */
-
         pkt.emit(hdr2.ethernet);
-//        pkt.emit(hdr2.pfc);
+        pkt.emit(hdr2.pfc);
+        pkt.emit(hdr2.queuedepth);
         pkt.emit(hdr2.ipv4);
         pkt.emit(hdr2.udp);
         pkt.emit(hdr2.rocev2_bth);
-//        pkt.emit(hdr2.rocev2_reth);
+        pkt.emit(hdr2.left);
         pkt.emit(hdr2.rocev2_aeth);
-//        pkt.emit(hdr2.rocev2_payload);
+        pkt.emit(hdr2.left_cp);
+        pkt.emit(hdr2.cp_data);
         pkt.emit(hdr2.rocev2_crc);
     }
 }

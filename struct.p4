@@ -37,6 +37,7 @@ struct switch_ingress_metadata_t {
     bit<8> dst_qp_5;
     bit<8> dst_qp_6;
     bit<24> dst_qp;
+    bit<5> cache_timer;
     bit<32> cache_info_dst_qp;
     bit<24> cache_info_packet_seq;
     bit<32> cache_info_message_seq;
@@ -47,6 +48,8 @@ struct switch_ingress_metadata_t {
     //bit<24> bth_packet_seq;
     bit<32> nack_flag;
     MirrorId_t sess_id;
+    mirror_type_t mirror_type;
+    bit<24> next_seq;
 
     bit<64> for_crc1;
     bit<64> for_crc2;
@@ -75,6 +78,7 @@ struct switch_ingress_metadata_t {
 }
 
 struct switch_egress_metadata_t {
+    bit<24> next_seq;
     bit<64> crc_part_1;
     bit<64> crc_part_2;
     bit<64> crc_part_3;
@@ -82,6 +86,7 @@ struct switch_egress_metadata_t {
     bit<64> crc_part_5;
     bit<64> crc_part_6;
     bit<32> crc_part_7;
+
     bit<32> crc_final;
     //bit<48> diff_time;
     //bit<48> initial_egr_timestamp;
@@ -90,6 +95,7 @@ struct switch_egress_metadata_t {
     bit<32> s2;
     //bit<32> s3;
     MirrorId_t sess_id;
+    mirror_type_t mirror_type;
     pkt_type_t pkt_type;
 }
 
@@ -104,8 +110,14 @@ struct switch_header_t {
     rocev2_bth_h rocev2_bth;
     rocev2_reth_h rocev2_reth;
     rocev2_aeth_h rocev2_aeth;
+    queuedepth_h queuedepth;
+
+    add_h add;
 
     left_h left;
+    left_nak_h left_nak;
+    left_cp_h left_cp;
+    cp_data_h cp_data;
 
     tcp_payload_0_h tcp_payload_0;
     tcp_payload_1_h tcp_payload_1;
@@ -132,8 +144,8 @@ struct switch_header_t {
 
     rocev2_crc_h rocev2_crc;
     MirrorId_t egr_mir_ses;
-    bit<12> src_qp;
-    bit<12> store_qp;
+    bit<16> src_qp;
+    bit<16> store_qp;
 //    bit<32> nack_flag;
 //    bit<32> large_seq_flag;
 //    bit<8> ori_pass_egress;

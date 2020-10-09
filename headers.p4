@@ -60,12 +60,16 @@ const pkt_type_t PKT_TYPE_NORMAL = 1;
 const pkt_type_t PKT_TYPE_MIRROR = 2;
 
 #if __TARGET_TOFINO__ == 1
-typedef bit<3> mirror_type_t;
+typedef bit<6> mirror_type_t;
 #else
 typedef bit<4> mirror_type_t;
 #endif
-const mirror_type_t MIRROR_TYPE_I2E = 1;
-const mirror_type_t MIRROR_TYPE_E2E = 2;
+//const mirror_type_t MIRROR_TYPE_I2E = 1;
+//const mirror_type_t MIRROR_TYPE_E2E = 2;
+#define SWITCH_MIRROR_TYPE_PORT 5
+#define SWITCH_MIRROR_TYPE_SQ_PAUSE 10
+#define SWITCH_MIRROR_TYPE_CUT_PAYLOAD 9
+
 
 /**/
 header ethernet_h {
@@ -121,7 +125,7 @@ header tcp_h {
 header udp_h {
     bit<16> src_port;
     bit<16> dst_port;
-    bit<16> hdr_length;
+    bit<16> length;
     bit<16> checksum;
 }
 
@@ -182,6 +186,12 @@ header tcp_payload_5_h {
     bit<8> payload;
 }
 
+
+header queuedepth_h {
+    bit<16> index;
+    bit<32> content;
+}
+
 header tcp_payload_6_h {
     bit<8> payload;
 }
@@ -201,6 +211,23 @@ header rocev2_payload_h {
 
 header left_h{
     bit<96> content;
+   //bit<16> content;
+}
+
+header left_nak_h{
+    bit<80> content;
+}
+
+header left_cp_h{
+    //bit<48> content;
+    bit<32> content;
+}
+header cp_data_h{
+    bit<32> content;
+}
+
+header add_h{
+    bit<16> content;
 }
 
 header rocev2_crc_h {
@@ -213,6 +240,16 @@ header mirror_h {
 }
 */
 header mirror_header_type_0_h {}
+
+header mirror_header_type_1_h {}
+
+
+header switch_port_mirror_metadata_h {
+    mirror_type_t type;
+    MirrorId_t session_id;
+
+}
+
 
 #endif /* _HEADERS_ */
 

@@ -2,7 +2,7 @@ ifndef SDE_INSTALL
 $(error SDE_INSTALL is not set)
 endif
 
-P4_PROG = yle_switch
+P4_PROG = ampel_switch
 ARCH = tofino
 SOURCES = main.c
 

@@ -34,7 +34,7 @@
 #define STATUS_SERVER_TCP_PORT 7777
 
 
-#define P4_PROG_NAME "yle_switch"
+#define P4_PROG_NAME "ampel_switch"
 #define TX_CAPTURE_DEV_PORT 128
 
 // Global variable(s)
@@ -89,11 +89,26 @@ void status_check(bf_status_t status,  const char * funcname){
         }
 }
 
+void shaping_setup(const uint8_t dev_id){
+    bf_status_t      status;
+    bf_dev_port_t ports[8] = {132, 128, 136, 144, 140}; 
+    for(int i=0; i< 1; i++){
+        uint32_t burst_size = 1500; //in bytesi
+        uint32_t rate = 10000000; //in kbps
+        bf_dev_port_t egress_port = ports[i];
+        status = bf_tm_sched_port_shaping_rate_set(dev_id, egress_port, false, burst_size, rate);
+        status_check(status, "bf_tm_sched_port_shaping_rate_set");
+        status = bf_tm_sched_port_shaping_enable(dev_id, egress_port);
+        status_check(status, "bf_tm_sched_port_shaping_enable");
+    }
+    return;
+}
+
 void pfc_setup(const uint8_t dev_id){
    
 	bf_status_t      status;
-    bf_dev_port_t ports[8] = {128, 136, 144};  //1/0,2/0,3/0 
-    for(int i=0; i<3; i++){
+    bf_dev_port_t ports[8] = {128, 136, 144, 132, 140, 160, 168};  //1/0,2/0,3/0,
+    for(int i=0; i<7; i++){
         bf_dev_port_t ingress_port = ports[i];
         bf_dev_port_t egress_port = ports[i];
 
@@ -130,13 +145,14 @@ void pfc_setup(const uint8_t dev_id){
         status = bf_tm_q_app_pool_usage_set(dev_id, egress_port, queue_id, BF_TM_EG_APP_POOL_3,base_use_limit_cells, BF_TM_Q_BAF_DISABLE, base_use_limit_cells/2 );
         status_check(status, "bf_tm_q_app_pool_usage_set");
 
-        uint32_t burst_size = 1500; //in bytesi
-        uint32_t rate = 80000000; //in kbps
+ //       uint32_t burst_size = 1500; //in bytesi
+ //       uint32_t rate = 80000000; //in kbps
  //       status = bf_tm_sched_port_shaping_rate_set(dev_id, egress_port, false, burst_size, rate);
  //       status_check(status, "bf_tm_sched_port_shaping_rate_set");
  //       status = bf_tm_sched_port_shaping_enable(dev_id, egress_port);
  //       status_check(status, "bf_tm_sched_port_shaping_enable");
-        uint8_t cos_map = 0x0;
+    
+    uint8_t cos_map = 0x0;
         status = bf_tm_q_pfc_cos_mapping_set(dev_id, egress_port, queue_id, cos_map ); 
         status_check(status, "bf_tm_q_pfc_cos_mapping_set");
 
@@ -157,23 +173,70 @@ void add_mirror(const uint8_t dev_id, p4_pd_sess_hdl_t  sess_hdl){
         //p4_pd_tm_pipe_t pipe,
         //p4_pd_tm_port_t port,
         //p4_pd_tm_queue_t queue
-
-        status = p4_pd_tm_set_negative_mirror_dest(dev_id, 1, 156, 0);
+        
+        status = p4_pd_tm_set_negative_mirror_dest(dev_id, 1, 148, 0);
         status_check(status,"p4_pd_tm_set_negative_mirror_dest");
-        p4_pd_mirror_session_info_t mirror_sess;
-        mirror_sess.type = PD_MIRROR_TYPE_NORM;
-        mirror_sess.dir = PD_DIR_EGRESS;
-        mirror_sess.id = 15;
-        mirror_sess.egr_port = 156; 
-        mirror_sess.egr_port_v = true;
-        mirror_sess.max_pkt_len = 64;
-       
-        p4_pd_dev_target_t target_dev;
-        target_dev.device_id = dev_id;
-        target_dev.dev_pipe_id = 1;
-        status = p4_pd_mirror_session_create(sess_hdl, target_dev, &mirror_sess);
-        status_check(status,"p4_pd_mirror_session_create");
-        return;
+
+        int ports[7] = {128, 136, 144, 132, 140, 160, 168}; //see seedpkt.py
+//        for (int i=0; i<7; i++){
+//            p4_pd_mirror_session_info_t mirror_sess1;
+//            mirror_sess1.type = PD_MIRROR_TYPE_NORM;
+//            mirror_sess1.dir = PD_DIR_INGRESS;
+//            mirror_sess1.id = ports[i];
+//            mirror_sess1.egr_port = ports[i]; 
+//            mirror_sess1.egr_port_v = true;
+//            mirror_sess1.max_pkt_len = 64;
+//            p4_pd_dev_target_t target_dev1;
+//            target_dev1.device_id = dev_id;
+//            target_dev1.dev_pipe_id = 1;
+//            status = p4_pd_mirror_session_create(sess_hdl, target_dev1, &mirror_sess1);
+//            status_check(status,"p4 cp mirror_session");
+//        }
+
+
+        for (int i=0; i<7; i++){
+            p4_pd_mirror_session_info_t mirror_sess2;
+            mirror_sess2.type = PD_MIRROR_TYPE_NORM;
+            mirror_sess2.dir = PD_DIR_INGRESS;
+            mirror_sess2.id = ports[i];
+            mirror_sess2.egr_port = ports[i]; 
+            mirror_sess2.egr_port_v = true;
+            mirror_sess2.max_pkt_len = 64;
+            p4_pd_dev_target_t target_dev2;
+            target_dev2.device_id = dev_id;
+            target_dev2.dev_pipe_id = 1;
+            status = p4_pd_mirror_session_create(sess_hdl, target_dev2, &mirror_sess2);
+            status_check(status,"p4_pd_mirror_session_create2");
+        }
+
+/*
+        p4_pd_mirror_session_info_t mirror_sess5;
+        mirror_sess5.type = PD_MIRROR_TYPE_NORM;
+        mirror_sess5.dir = PD_DIR_INGRESS;
+        mirror_sess5.id = 17;
+        mirror_sess5.egr_port = 152; 
+        mirror_sess5.egr_port_v = true;
+        mirror_sess5.max_pkt_len = 64;
+        p4_pd_dev_target_t target_dev5;
+        target_dev5.device_id = dev_id;
+        target_dev5.dev_pipe_id = 1;
+        status = p4_pd_mirror_session_create(sess_hdl, target_dev5, &mirror_sess5);
+        status_check(status,"p4_pd_mirror_session_create5");
+
+        p4_pd_mirror_session_info_t mirror_sess6;
+        mirror_sess6.type = PD_MIRROR_TYPE_NORM;
+        mirror_sess6.dir =PD_DIR_INGRESS; //PD_DIR_EGRESS;
+        mirror_sess6.id = 15;
+        mirror_sess6.egr_port = 156; 
+        mirror_sess6.egr_port_v = true;
+        mirror_sess6.max_pkt_len = 64;
+        p4_pd_dev_target_t target_dev6;
+        target_dev6.device_id = dev_id;
+        target_dev6.dev_pipe_id = 1;
+        status = p4_pd_mirror_session_create(sess_hdl, target_dev6, &mirror_sess6);
+        status_check(status,"p4_pd_mirror_session_create6");
+*/
+return;
 
 }
 p4_pd_status_t control_plane_app(){
@@ -194,7 +257,12 @@ p4_pd_status_t control_plane_app(){
 
     sleep(5); // just wait for the ports to come up. Can do better using port OPR checks.
     
+    //shaping_setup(dev_id);
+    
     //pfc_setup(dev_id);
+    
+    //use negative mirror to check packet loss
+    //enable it
     add_mirror(dev_id, sess_hdl); 
 
     while(true){
